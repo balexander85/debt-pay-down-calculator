@@ -8,6 +8,7 @@
     I could then take action on the plan that has the best outcome.
 """
 import logging
+import json
 import sys
 from typing import List
 
@@ -64,16 +65,16 @@ class Promotion:
 
     def __init__(
             self,
-            reg_rate,
+            regular_rate,
             promo_rate,
             end_date: str,
-            min_mon_payment,
+            minimum_monthly_payment,
             promo_type: str
     ):
-        self.regular_rate = reg_rate
+        self.regular_rate = regular_rate
         self.promo_rate = promo_rate
         self.end_date = end_date
-        self.minimum_monthly_payment = min_mon_payment
+        self.minimum_monthly_payment = minimum_monthly_payment
         self.promo_type = promo_type
 
 
@@ -84,23 +85,39 @@ class Loan:
 
     def __init__(
             self,
-            name,
-            rate,
+            lender_name: str,
+            interest_rate,
             balance,
-            min_payment,
+            min_monthly_payment,
             loan_type,
-            promo_type: str = None,
-            promo_details: Promotion = None,
+            promo: dict = None,
             deductible: str = "1"
     ):
-        self.lender_name = name
-        self.interest_rate = rate
+        self.lender_name = lender_name
+        self.interest_rate = interest_rate
         self.balance = balance
-        self.min_monthly_payment = min_payment
+        self.min_monthly_payment = min_monthly_payment
         self.loan_type = loan_type
-        self.promo_type = promo_type
-        self.promo_details = promo_details
+        self.promo = promo
         self.deductible = deductible
+
+    @property
+    def promo_details(self) -> Promotion:
+        if self.promo:
+            return Promotion(**self.promo)
+
+
+class Loans:
+
+    def __init__(self, loans: List[Loan]):
+        self.loans = loans
+
+    def __len__(self):
+        return len(self.loans)
+
+    def __iter__(self) -> Loan:
+        for loan in self.loans:
+            yield Loan(**loan)
 
 
 class DebtCalculatorClient:
@@ -113,10 +130,9 @@ class DebtCalculatorClient:
 
     def __init__(
             self,
+            plan_name: str,
             number_of_debts: int,
-            tax_bracket: str,
-            budget_savings: int,
-            raises: str,
+            user_info: dict,
             windfalls: List[Windfall]
     ):
         self.session = requests.Session()
@@ -131,10 +147,11 @@ class DebtCalculatorClient:
                           "AppleWebKit/537.36 (KHTML, like Gecko) "
                           "Chrome/64.0.3282.140 Safari/537.36"
         }
+        self.plan_name = plan_name
         self.loan_count = number_of_debts
-        self.tax_bracket = tax_bracket
-        self.budget_cuts = budget_savings
-        self.future_raises = raises
+        self.tax_bracket = user_info.get("tax_bracket")
+        self.budget_cuts = user_info.get("budget_savings")
+        self.future_raises = user_info.get("raises")
         self.windfalls = windfalls
         self.view_state = None
         self.declare_number_of_debts()
@@ -191,7 +208,7 @@ class DebtCalculatorClient:
         }
         self.submit_request(params=params)
 
-    def post_lender_name_and_loan_type(self, lender_name: str, debt_type: str):
+    def post_lender_name_and_loan_type(self, loan: Loan):
         """
             Second question:
             Type of loan:
@@ -203,33 +220,32 @@ class DebtCalculatorClient:
         """
         params = {
             "ctl00$well$defaultUC$isValid": "LT",
-            "ctl00$well$defaultUC$lenderNameLT": lender_name,
-            "ctl00$well$defaultUC$AnswerLT": loan_types.get(debt_type)
+            "ctl00$well$defaultUC$lenderNameLT": loan.lender_name,
+            "ctl00$well$defaultUC$AnswerLT": loan_types.get(loan.loan_type)
         }
         self.submit_request(params=params)
 
-    def enter_loan_balance(self, lender_name: str, balance: str):
+    def enter_loan_balance(self, loan: Loan):
         """
               Add total of balance of debt
         """
         params = {
             "ctl00$well$defaultUC$isValid": "LB",
-            "ctl00$well$defaultUC$lenderNameLB": lender_name,
-            "ctl00$well$defaultUC$loanBalanceLB": balance,
+            "ctl00$well$defaultUC$lenderNameLB": loan.lender_name,
+            "ctl00$well$defaultUC$loanBalanceLB": loan.balance,
         }
         self.submit_request(params=params)
 
-    def enter_loan_details(
-            self, monthly_payment: str, rate: str, tax_deductible: str
-    ):
+    def enter_loan_details(self, loan: Loan):
         """
               Enter details of the loan
         """
         params = {
             "ctl00$well$defaultUC$isValid": "OL",
-            "ctl00$well$defaultUC$currMonthlyPaymentOL": monthly_payment,
-            "ctl00$well$defaultUC$interestRateOL": rate,
-            "ctl00$well$defaultUC$selectedOL": tax_deductible
+            "ctl00$well$defaultUC$currMonthlyPaymentOL":
+                loan.min_monthly_payment,
+            "ctl00$well$defaultUC$interestRateOL": loan.interest_rate,
+            "ctl00$well$defaultUC$selectedOL": loan.deductible
         }
         self.submit_request(params=params)
 
@@ -245,7 +261,7 @@ class DebtCalculatorClient:
         }
         self.submit_request(params=params)
 
-    def select_promo_type(self, promo_type):
+    def select_promo_type(self, promo_type: str):
         """
             Add the type of promo if applicable
         """
@@ -272,16 +288,15 @@ class DebtCalculatorClient:
         }
         self.submit_request(params=params)
 
-    def add_interest_rate_and_payments(
-            self, rate: str, min_monthly_payment: str
-    ):
+    def add_interest_rate_and_payments(self, loan: Loan):
         """
             Enter the interest rate and Minimum Monthly Payment
         """
         params = {
             "ctl00$well$defaultUC$isValid": "NSP",
-            "ctl00$well$defaultUC$interestRateNSP": rate,
-            "ctl00$well$defaultUC$minMonthlyPaymentNSP": min_monthly_payment,
+            "ctl00$well$defaultUC$interestRateNSP": loan.interest_rate,
+            "ctl00$well$defaultUC$minMonthlyPaymentNSP":
+                loan.min_monthly_payment,
 
         }
         self.submit_request(params=params)
@@ -355,41 +370,27 @@ class DebtCalculatorClient:
         }
         self.submit_request(params=params)
 
-    def add_loan(self, loan_info: Loan):
-        self.post_lender_name_and_loan_type(
-            lender_name=loan_info.lender_name,
-            debt_type=loan_info.loan_type,
-        )
-        self.enter_loan_balance(
-            lender_name=loan_info.lender_name, balance=loan_info.balance
-        )
-        if loan_info.loan_type == "Other kind of loan":
-            self.enter_loan_details(
-                monthly_payment=loan_info.min_monthly_payment,
-                rate=loan_info.interest_rate,
-                tax_deductible=loan_info.deductible
-            )
+    def add_loan(self, loan: Loan):
+        self.post_lender_name_and_loan_type(loan=loan)
+        self.enter_loan_balance(loan=loan)
+        if loan.loan_type == "Other kind of loan":
+            self.enter_loan_details(loan=loan)
             self.is_change_loan_details(change="1")
         else:
-            self.add_credit_card(loan_info)
+            self.add_credit_card(loan=loan)
 
-    def add_credit_card(self, loan_info: Loan):
+    def add_credit_card(self, loan: Loan):
         """
             This path covers loan types of Credit card or retailer charge card
         """
-        if loan_info.promo_details:
-            self.select_promo_type(
-                promo_type=loan_info.promo_details.promo_type
-            )
-            self.post_promo_details(loan_info.promo_details)
+        if loan.promo_details:
+            self.select_promo_type(promo_type=loan.promo_details.promo_type)
+            self.post_promo_details(promo=loan.promo_details)
         else:
             self.select_promo_type(
                 promo_type="No special promotion on this card"
             )
-            self.add_interest_rate_and_payments(
-                rate=loan_info.interest_rate,
-                min_monthly_payment=loan_info.min_monthly_payment
-            )
+            self.add_interest_rate_and_payments(loan=loan)
 
     def add_windfalls(self):
         """If windfalls add them"""
@@ -420,7 +421,7 @@ class DebtCalculatorClient:
 
         }
         response = self.submit_request(params=params)
-        save_page(page_response=response, page_name="Debt-Pay-Down-Plan")
+        save_page(page_response=response, page_name=self.plan_name)
 
 
 def save_page(page_response: requests.Response, page_name: str):
@@ -435,71 +436,22 @@ def get_view_state(page_response: requests.Response) -> str:
 
 
 if __name__ == "__main__":
-    # All below is an example of what can possibly be done
-    # I have not covered all the different possible permutations
-    # of loans and cards but all of the ones I found useful
-    # Eventually I would like to possibly have a json file to
-    # use for a user's info
-    user_windfalls = [
-        Windfall(amount="1000", date="03/11/2018"),
-        Windfall(amount="1000", date="04/15/2019")
-    ]
 
-    loans = [
-        Loan(
-            name="Student Loan 1",
-            rate="3.28",
-            balance="859.66",
-            min_payment="43.21",
-            loan_type="Other kind of loan",
-            deductible="0"
-        ),
-        Loan(
-            name="Student Loan 2",
-            rate="6.8",
-            balance="3218.18",
-            min_payment="91.32",
-            loan_type="Other kind of loan",
-            deductible="0"
-        ),
-        Loan(
-            name="Personal Loan",
-            rate="11.95",
-            balance="16093.98",
-            min_payment="682.34",
-            loan_type="Other kind of loan",
-        ),
-        Loan(
-            name="Credit Card 1",
-            rate="11.15",
-            balance="3000",
-            min_payment="75",
-            loan_type="Credit card or retailer charge card",
-        ),
-        Loan(
-            name="Credit Card 2",
-            rate="19.24",
-            balance="4000",
-            min_payment="75",
-            loan_type="Credit card or retailer charge card",
-            promo_details=Promotion(
-                reg_rate="19.24",
-                promo_rate="0",
-                end_date="10/16/2018",
-                min_mon_payment="75",
-                promo_type="A low introductory interest rate "
-                           "that will increase at a later date",
-            )
-        )
-    ]
+    plan = "example-plan"
+
+    with open(f"{plan}-config.json", "r") as loan_json:
+        loaded_json = json.load(loan_json)
+        user_loans = Loans(loaded_json.get("loans"))
+        user_windfalls = [
+            Windfall(**wf) for wf in loaded_json.get("windfalls")
+        ]
+        user = loaded_json.get("user")
 
     with DebtCalculatorClient(
-            number_of_debts=len(loans),
-            tax_bracket="28% ($77,101-$160,850 single; "
-                        "$128,501-$195,850 married)",
-            budget_savings=50,
-            raises="0",
+            plan_name=plan,
+            number_of_debts=len(user_loans),
+            user_info=user,
             windfalls=user_windfalls
     ) as debt_calculator:
-        for loan in loans:
-            debt_calculator.add_loan(loan_info=loan)
+        for user_loan in user_loans:
+            debt_calculator.add_loan(loan=user_loan)

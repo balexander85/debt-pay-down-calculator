@@ -1,0 +1,55 @@
+{
+  "loans": [
+    {
+      "lender_name": "Student Loan",
+      "interest_rate": "6.8",
+      "balance": "3018.36",
+      "min_monthly_payment": "85.65",
+      "loan_type": "Other kind of loan",
+      "promo": null,
+      "deductible": "0"
+    },
+    {
+      "lender_name": "Personal Loan",
+      "interest_rate": "11.95",
+      "balance": "5445.43",
+      "min_monthly_payment": "182.34",
+      "loan_type": "Other kind of loan",
+      "promo": null,
+      "deductible": "1"
+    },
+    {
+      "lender_name": "Credit Card 1",
+      "interest_rate": "11.15",
+      "balance": "4000",
+      "min_monthly_payment": "75",
+      "loan_type": "Credit card or retailer charge card",
+      "promo": null,
+      "deductible": "1"
+    },
+    {
+      "lender_name": "Credit Card 2",
+      "interest_rate": "19.24",
+      "balance": "6800",
+      "min_monthly_payment": "75",
+      "loan_type": "Credit card or retailer charge card",
+      "promo": {
+        "regular_rate": "19.24",
+        "promo_rate": "0",
+        "end_date": "10/16/2018",
+        "minimum_monthly_payment": "75",
+        "promo_type": "A low introductory interest rate that will increase at a later date"
+      },
+      "deductible": "1"
+    }
+  ],
+  "windfalls": [
+    {"amount": "1000", "date": "04/11/2018"},
+    {"amount": "1000", "date": "04/11/2019"}
+  ],
+  "user": {
+    "tax_bracket": "28% ($77,101-$160,850 single; $128,501-$195,850 married)",
+    "budget_savings": 50,
+    "raises": "0"
+  }
+}
