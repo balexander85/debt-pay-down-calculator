@@ -9,6 +9,7 @@
 """
 import logging
 import json
+import os
 import sys
 from typing import List
 
@@ -426,7 +427,7 @@ class DebtCalculatorClient:
 
 def save_page(page_response: requests.Response, page_name: str):
     soup = BeautifulSoup(page_response.content, "html.parser")
-    with open(f"{page_name}.html", "w") as web_page:
+    with open(f"plans/{page_name}.html", "w") as web_page:
         web_page.write(str(soup.select_one("div.calculator")))
 
 
@@ -437,21 +438,20 @@ def get_view_state(page_response: requests.Response) -> str:
 
 if __name__ == "__main__":
 
-    plan = "example-plan"
+    for plan in os.listdir("plan_configs"):
+        with open(f"plan_configs/{plan}", "r") as loan_json:
+            loaded_json = json.load(loan_json)
+            user_loans = Loans(loaded_json.get("loans"))
+            user_windfalls = [
+                Windfall(**wf) for wf in loaded_json.get("windfalls")
+            ]
+            user = loaded_json.get("user")
 
-    with open(f"{plan}-config.json", "r") as loan_json:
-        loaded_json = json.load(loan_json)
-        user_loans = Loans(loaded_json.get("loans"))
-        user_windfalls = [
-            Windfall(**wf) for wf in loaded_json.get("windfalls")
-        ]
-        user = loaded_json.get("user")
-
-    with DebtCalculatorClient(
-            plan_name=plan,
-            number_of_debts=len(user_loans),
-            user_info=user,
-            windfalls=user_windfalls
-    ) as debt_calculator:
-        for user_loan in user_loans:
-            debt_calculator.add_loan(loan=user_loan)
+        with DebtCalculatorClient(
+                plan_name=plan.replace(".json", ""),
+                number_of_debts=len(user_loans),
+                user_info=user,
+                windfalls=user_windfalls
+        ) as debt_calculator:
+            for user_loan in user_loans:
+                debt_calculator.add_loan(loan=user_loan)
