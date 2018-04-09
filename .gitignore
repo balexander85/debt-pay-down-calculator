@@ -4,3 +4,4 @@ __pycache__/
 *.html
 .python-version
 plan_configs/
+*.pyc
