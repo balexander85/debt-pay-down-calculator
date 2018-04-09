@@ -4,7 +4,7 @@
 import json
 
 from util.wrapped_webdriver import WrappedWebDriver
-from debt_pay_down_calculator import Loans
+from debt_pay_down_calculator import Loans, Windfall
 from calculator_page import Calculator, loan_types
 
 
@@ -18,10 +18,9 @@ class CalculatorClient:
         self.tax_bracket = self.user_info.get("tax_bracket")
         self.budget_cuts = self.user_info.get("budget_savings")
         self.future_raises = self.user_info.get("raises")
-        # self.windfalls = [
-        #     Windfall(**wf) for wf in user_json.get("windfalls")
-        # ]
-        self.windfalls = 0
+        self.windfalls = [
+            Windfall(**wf) for wf in user_json.get("windfalls")
+        ]
 
     def __call__(self, webdriver: WrappedWebDriver, *args, **kwargs):
         self.calculator = Calculator(webdriver=webdriver)
@@ -38,7 +37,14 @@ class CalculatorClient:
         return self.plan_name
 
     def _wrap_up_steps(self):
-        self.calculator.declare_additional_income(number=self.windfalls)
+        if self.windfalls:
+            self.calculator.declare_additional_income(
+                number=len(self.windfalls)
+            )
+            for count, windfall in enumerate(self.windfalls):
+                self.calculator.add_windfalls(index=count, windfall=windfall)
+        else:
+            self.calculator.declare_additional_income(number=0)
         self.calculator.declare_extra_payments(number=self.budget_cuts)
         self.calculator.select_tax_bracket(bracket=self.tax_bracket)
         self.calculator.generate_plan(page_name=self.plan_name)

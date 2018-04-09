@@ -1,10 +1,9 @@
 
+from typing import List
+
 from selenium import webdriver
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.action_chains import ActionChains
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 
 
 chromedriver_path = "/Users/brian/bin/chromedriver"
@@ -88,3 +87,15 @@ class WrappedWebDriver:
     #         element_has_attribute(element, attribute, value),
     #         "Element does not have value"
     #     )
+
+
+def click_visible_element(elements: List[WebElement]):
+    """
+        Pass list of elements in and click the element
+        that is visible there should only be one
+    """
+    element = [e for e in elements if e.is_displayed()]
+    if len(element) == 1:
+        element[0].click()
+    else:
+        raise Exception("More than one element is visible.")

@@ -1,8 +1,10 @@
 """
 Page objects for the debt pay down calculator
 """
-from util.wrapped_webdriver import WrappedWebDriver
-from debt_pay_down_calculator import Loan
+from datetime import datetime
+
+from util.wrapped_webdriver import WrappedWebDriver, click_visible_element
+from debt_pay_down_calculator import Loan, Windfall
 
 
 tax_brackets = {
@@ -31,6 +33,47 @@ class BasePage:
         self.driver = webdriver
 
 
+class DatePicker:
+    """Date picker on the calculator page"""
+
+    def __init__(self, webdriver: WrappedWebDriver, date: str):
+        self.driver = webdriver
+        self.datetime = datetime.strptime(date, "%m/%d/%Y")
+        self.year = self.datetime.year
+        self.month = self.datetime.strftime("%B")
+        self.day = self.datetime.day
+        self.nav_up()
+        self.select_date()
+
+    def nav_up(self):
+        month_year_button = self.driver.driver.find_elements_by_css_selector(
+            "span.up"
+        )
+        click_visible_element(month_year_button)
+        year_button = self.driver.driver.find_elements_by_css_selector(
+                "span.up"
+            )
+        click_visible_element(year_button)
+
+    def select_date(self):
+        """
+            Assumed that the date picker calendar is visible
+            and on default view
+        """
+        year = self.driver.driver.find_elements_by_xpath(
+            f"//span[text()='{self.year}'][contains(@class, 'cell year')]"
+        )
+        click_visible_element(year)
+        month = self.driver.driver.find_elements_by_xpath(
+            f"//span[text()='{self.month}']"
+        )
+        click_visible_element(month)
+        day = self.driver.driver.find_elements_by_xpath(
+            f"//span[text()='{self.day}']"
+        )
+        click_visible_element(day)
+
+
 class Calculator(BasePage):
     """The overall calculator on the page"""
 
@@ -40,13 +83,15 @@ class Calculator(BasePage):
     )
     CALCULATOR_CONTAINER = "debt-pay-down-calculator"
     DEBT_COUNT_INPUT = "debtCount"
-    ADDITIONAL_INCOME_INPUT = "additionalIncomeCount"
     EXTRA_PAYMENT_INPUT = "extraPayment"
     CARD_LENDER_NAME_INPUT = "lenderNamecreditCardLoan{index}"
     CARD_BALANCE_INPUT = "amountcreditCardLoan{index}"
     CARD_INTEREST_RATE_INPUT = "interestRatecreditCardLoan{index}"
     CARD_MIN_PAYMENT_INPUT = "monthlyPaymentcreditCardLoan{index}"
     CARD_PROMO_RATE = "introductoryRatecreditCardLoan{index}"
+    CARD_PROMO_END_DATE = (
+        "//label[text()='Intro rate ends:']/../div[@class='vdp-datepicker']"
+    )
     PROMO_RATE_RADIO_OPTION = (
         "//input[@name='promotionTypecreditCardLoan{index}']/.."
     )
@@ -57,15 +102,25 @@ class Calculator(BasePage):
     OTHER_LOAN_TAX_DEDUCTIBLE_RADIO_OPTION = (
         "//input[@name='taxDeductibleotherLoanLoan{index}'][@value='true']/.."
     )
+    ADDITIONAL_INCOME_INPUT = "additionalIncomeCount"
+    ADDITIONAL_INCOME_TYPE_DROP_DOWN = "incomeTypeIncome{index}"
+    ADDITIONAL_INCOME_MONTHLY_AMOUNT = "amountIncome{index}"
+    ADDITIONAL_INCOME_RAISE_START_DATE = (
+        "//label[text()='Start date:']/../div[@class='vdp-datepicker']"
+    )
+    ADDITIONAL_INCOME_WINDFALL_DATE = (
+        "//label[text()='Date:']/../div[@class='vdp-datepicker']"
+    )
     CALCULATE_BUTTON = "div.grid-cell.size-1of3.\+center-content button"
+    START_OVER_BUTTON = "//button[contains(text(), 'Start over')]"
     RESULTS_DIV = "//h5[text()='Results']/.."
 
-    def declare_number_of_debts(self, debts):
+    def declare_number_of_debts(self, debts: int):
         """How many debts do you want to include in your plan?"""
         input_box = self.driver.get_element(self.DEBT_COUNT_INPUT)
         self.driver.type(input_box, debts)
 
-    def declare_additional_income(self, number):
+    def declare_additional_income(self, number: int):
         """
         Do you expect any additional income income that you
         can apply to your payments?
@@ -73,7 +128,7 @@ class Calculator(BasePage):
         input_box = self.driver.get_element(self.ADDITIONAL_INCOME_INPUT)
         self.driver.type(input_box, number)
 
-    def declare_extra_payments(self, number):
+    def declare_extra_payments(self, number: int):
         """
         If you have a lot of high interest rate debt to pay down,
         then it is best to pay that down instead of saving at a low rate.
@@ -81,7 +136,7 @@ class Calculator(BasePage):
         input_box = self.driver.get_element(self.EXTRA_PAYMENT_INPUT)
         self.driver.type(input_box, number)
 
-    def select_tax_bracket(self, bracket, default_bracket="10"):
+    def select_tax_bracket(self, bracket: str, default_bracket: str="10"):
         """What tax bracket are you in?"""
         drop_down = self.driver.get_element(default_bracket)
         drop_down.click()
@@ -89,12 +144,22 @@ class Calculator(BasePage):
             f"//span[text()='{tax_brackets.get(bracket)}']"
         ).click()
 
-    def select_loan_type(self, index, loan_type):
+    def select_loan_type(self, index: int, loan_type: int):
         """Add loan type."""
         loan_type_drop_down = self.driver.get_element(f"loanType{index}")
         loan_type_drop_down.click()
         self.driver.driver.find_elements_by_xpath(
             f"//span[text()='{loan_types.get(loan_type)}']"
+        )[index].click()
+
+    def select_additional_income_type(self, index: int, income_type: str):
+        """Select Windfall or Raise"""
+        income_type_drop_down = self.driver.get_element(
+            self.ADDITIONAL_INCOME_TYPE_DROP_DOWN.format(index=index)
+        )
+        income_type_drop_down.click()
+        self.driver.driver.find_elements_by_xpath(
+            f"//span[text()='{income_type}']"
         )[index].click()
 
     def add_credit_card(self, index: int, card: Loan):
@@ -118,10 +183,6 @@ class Calculator(BasePage):
         self.driver.type(min_payment, card.min_monthly_payment)
         if card.promo_details:
             self.add_credit_card_with_promo_rate(index=index, card=card)
-
-    def add_windfalls(self, index):
-        """If windfalls add them"""
-        return self, index
 
     def add_loan(self, index: int, loan: Loan):
         """Adding basic loan"""
@@ -158,6 +219,24 @@ class Calculator(BasePage):
             self.CARD_PROMO_RATE.format(index=index)
         )
         self.driver.type(intro_rate, card.promo_details.promo_rate)
+        date_picker = self.driver.driver.find_element_by_xpath(
+            self.CARD_PROMO_END_DATE
+        )
+        date_picker.click()
+        DatePicker(webdriver=self.driver, date=card.promo_details.end_date)
+
+    def add_windfalls(self, index: int, windfall: Windfall):
+        """If windfalls add them"""
+        self.select_additional_income_type(index=index, income_type="Windfall")
+        monthly_amount_input = self.driver.get_element(
+            self.ADDITIONAL_INCOME_MONTHLY_AMOUNT.format(index=index)
+        )
+        self.driver.type(monthly_amount_input, windfall.amount)
+        date_picker = self.driver.driver.find_element_by_xpath(
+            self.ADDITIONAL_INCOME_WINDFALL_DATE
+        )
+        date_picker.click()
+        DatePicker(webdriver=self.driver, date=windfall.date)
 
     def press_calculate(self):
         button = self.driver.driver.find_element_by_css_selector(
@@ -165,7 +244,7 @@ class Calculator(BasePage):
         )
         button.click()
 
-    def generate_plan(self, page_name):
+    def generate_plan(self, page_name: str):
         """Save Results table to file."""
         self.press_calculate()
         results = self.driver.driver.find_element_by_xpath(self.RESULTS_DIV)
