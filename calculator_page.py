@@ -90,7 +90,8 @@ class Calculator(BasePage):
     CARD_MIN_PAYMENT_INPUT = "monthlyPaymentcreditCardLoan{index}"
     CARD_PROMO_RATE = "introductoryRatecreditCardLoan{index}"
     CARD_PROMO_END_DATE = (
-        "//label[text()='Intro rate ends:']/../div[@class='vdp-datepicker']"
+        "//input[@name='introductoryRatecreditCardLoan{index}']/../../../../"
+        "div[3]/div/div/div/input"
     )
     PROMO_RATE_RADIO_OPTION = (
         "//input[@name='promotionTypecreditCardLoan{index}']/.."
@@ -220,7 +221,7 @@ class Calculator(BasePage):
         )
         self.driver.type(intro_rate, card.promo_details.promo_rate)
         date_picker = self.driver.driver.find_element_by_xpath(
-            self.CARD_PROMO_END_DATE
+            self.CARD_PROMO_END_DATE.format(index=index)
         )
         date_picker.click()
         DatePicker(webdriver=self.driver, date=card.promo_details.end_date)
@@ -247,6 +248,7 @@ class Calculator(BasePage):
     def generate_plan(self, page_name: str):
         """Save Results table to file."""
         self.press_calculate()
+        input("Verify input matches and press enter when done.")
         results = self.driver.driver.find_element_by_xpath(self.RESULTS_DIV)
         results_html = results.get_attribute('innerHTML')
         with open(f"plans/{page_name}.html", "w") as web_page:
