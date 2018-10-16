@@ -13,7 +13,7 @@ class CalculatorClient:
     def __init__(self, plan_name: str, user_json: dict):
         self.plan_name = plan_name
         self.user_loans = Loans(user_json.get("loans"))
-        self.loan_count = len(self.user_loans)
+        self.loan_count = str(len(self.user_loans))
         self.user_info = user_json.get("user")
         self.tax_bracket = self.user_info.get("tax_bracket")
         self.budget_cuts = self.user_info.get("budget_savings")
@@ -25,7 +25,7 @@ class CalculatorClient:
     def __call__(self, webdriver: WrappedWebDriver, *args, **kwargs):
         self.calculator = Calculator(webdriver=webdriver)
         webdriver.open(self.calculator.CALCULATOR_URL)
-        self.calculator.declare_number_of_debts(self.loan_count)
+        self.calculator.declare_number_of_debts(debts=self.loan_count)
         for count, user_loan in enumerate(self.user_loans):
             if user_loan.loan_type == loan_types.get(0):
                 self.calculator.add_credit_card(index=count, card=user_loan)
@@ -39,7 +39,7 @@ class CalculatorClient:
     def _wrap_up_steps(self):
         if self.windfalls:
             self.calculator.declare_additional_income(
-                number=len(self.windfalls)
+                number=str(len(self.windfalls))
             )
             for count, windfall in enumerate(self.windfalls):
                 self.calculator.add_windfalls(index=count, windfall=windfall)
@@ -49,6 +49,7 @@ class CalculatorClient:
         self.calculator.select_tax_bracket(bracket=self.tax_bracket)
         self.calculator.generate_plan(page_name=self.plan_name)
         self.calculator.driver.quit_driver()
+
 
 if __name__ == "__main__":
     driver = WrappedWebDriver(browser="chrome")

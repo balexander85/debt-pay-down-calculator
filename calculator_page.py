@@ -116,12 +116,12 @@ class Calculator(BasePage):
     START_OVER_BUTTON = "//button[contains(text(), 'Start over')]"
     RESULTS_DIV = "//h5[text()='Results']/.."
 
-    def declare_number_of_debts(self, debts: int):
+    def declare_number_of_debts(self, debts: str):
         """How many debts do you want to include in your plan?"""
         input_box = self.driver.get_element(self.DEBT_COUNT_INPUT)
         self.driver.type(input_box, debts)
 
-    def declare_additional_income(self, number: int):
+    def declare_additional_income(self, number: str):
         """
         Do you expect any additional income income that you
         can apply to your payments?
@@ -129,7 +129,7 @@ class Calculator(BasePage):
         input_box = self.driver.get_element(self.ADDITIONAL_INCOME_INPUT)
         self.driver.type(input_box, number)
 
-    def declare_extra_payments(self, number: int):
+    def declare_extra_payments(self, number: str):
         """
         If you have a lot of high interest rate debt to pay down,
         then it is best to pay that down instead of saving at a low rate.
@@ -234,7 +234,7 @@ class Calculator(BasePage):
         )
         self.driver.type(monthly_amount_input, windfall.amount)
         date_picker = self.driver.driver.find_element_by_xpath(
-            self.ADDITIONAL_INCOME_WINDFALL_DATE
+            self.ADDITIONAL_INCOME_WINDFALL_DATE.format(index=index)
         )
         date_picker.click()
         DatePicker(webdriver=self.driver, date=windfall.date)

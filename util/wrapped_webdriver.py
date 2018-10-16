@@ -1,4 +1,5 @@
 
+from time import sleep
 from typing import List
 
 from selenium import webdriver
@@ -38,10 +39,21 @@ class WrappedWebDriver:
     def click(self, locator):
         self.get_element(locator).click()
 
-    @staticmethod
-    def type(element: WebElement, value):
+    def type(self, element: WebElement, value: str):
+        """***WARNING RECURSIVE METHOD***
+
+            A very forceful method that assures that the text that is passed in
+            is the same text typed into the element input. A recursive loop is
+            possible, especially if input value has a space at the end.
+        """
         element.clear()
         element.send_keys(value)
+        sleep(2)
+        element_value = element.get_attribute('value')
+        try:
+            assert element_value == value
+        except AssertionError:
+            self.type(element=element, value=value)
 
     def locator_visible(self, locator):
         element = self.driver.find_element_by_css_selector(locator)
