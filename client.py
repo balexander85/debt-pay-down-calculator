@@ -1,6 +1,7 @@
 """
     Use page object to use debt pay down calculator
 """
+from datetime import datetime
 import json
 
 from util.wrapped_webdriver import WrappedWebDriver
@@ -12,14 +13,14 @@ class CalculatorClient:
 
     def __init__(self, plan_name: str, user_json: dict):
         self.plan_name = plan_name
-        self.user_loans = Loans(user_json.get("loans"))
+        self.user_loans = Loans(user_json.get('loans'))
         self.loan_count = str(len(self.user_loans))
-        self.user_info = user_json.get("user")
-        self.tax_bracket = self.user_info.get("tax_bracket")
-        self.budget_cuts = self.user_info.get("budget_savings")
-        self.future_raises = self.user_info.get("raises")
+        self.user_info = user_json.get('user')
+        self.tax_bracket = self.user_info.get('tax_bracket')
+        self.budget_cuts = self.user_info.get('budget_savings')
+        self.future_raises = self.user_info.get('raises')
         self.windfalls = [
-            Windfall(**wf) for wf in user_json.get("windfalls")
+            Windfall(**wf) for wf in user_json.get('windfalls')
         ]
 
     def __call__(self, webdriver: WrappedWebDriver, *args, **kwargs):
@@ -44,17 +45,19 @@ class CalculatorClient:
             for count, windfall in enumerate(self.windfalls):
                 self.calculator.add_windfalls(index=count, windfall=windfall)
         else:
-            self.calculator.declare_additional_income(number=0)
+            self.calculator.declare_additional_income(number='0')
         self.calculator.declare_extra_payments(number=self.budget_cuts)
         self.calculator.select_tax_bracket(bracket=self.tax_bracket)
         self.calculator.generate_plan(page_name=self.plan_name)
         self.calculator.driver.quit_driver()
 
 
-if __name__ == "__main__":
-    driver = WrappedWebDriver(browser="chrome")
-    with open("plan_configs/example-plan-config.json", "r") as loan_json:
+if __name__ == '__main__':
+    driver = WrappedWebDriver(browser='chrome')
+    with open('plan_configs/current-plan-config.json', 'r') as loan_json:
         loaded_json = json.load(loan_json)
 
-    client = CalculatorClient(plan_name="example-plan", user_json=loaded_json)
+    name = f'latest-plan-{datetime.now().date()}'
+
+    client = CalculatorClient(plan_name=name, user_json=loaded_json)
     client(webdriver=driver)
