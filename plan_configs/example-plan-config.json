@@ -3,7 +3,7 @@
     {
       "lender_name": "Student Loan",
       "interest_rate": "6.8",
-      "balance": "3018.36",
+      "balance": "3,018.36",
       "min_monthly_payment": "85.65",
       "loan_type": "Other kind of loan",
       "promo": null,
@@ -12,7 +12,7 @@
     {
       "lender_name": "Personal Loan",
       "interest_rate": "11.95",
-      "balance": "5445.43",
+      "balance": "5,445.43",
       "min_monthly_payment": "182.34",
       "loan_type": "Other kind of loan",
       "promo": null,
@@ -21,7 +21,7 @@
     {
       "lender_name": "Credit Card 1",
       "interest_rate": "11.15",
-      "balance": "4000",
+      "balance": "4,000",
       "min_monthly_payment": "75",
       "loan_type": "Credit card or retailer charge card",
       "promo": null,
@@ -30,7 +30,7 @@
     {
       "lender_name": "Credit Card 2",
       "interest_rate": "19.24",
-      "balance": "6800",
+      "balance": "6,800",
       "min_monthly_payment": "75",
       "loan_type": "Credit card or retailer charge card",
       "promo": {
@@ -44,12 +44,12 @@
     }
   ],
   "windfalls": [
-    {"amount": "1000", "date": "04/11/2018"},
-    {"amount": "1000", "date": "04/11/2019"}
+    {"amount": "1,000", "date": "04/11/2018"},
+    {"amount": "1,000", "date": "04/11/2019"}
   ],
   "user": {
     "tax_bracket": "28",
-    "budget_savings": 50,
+    "budget_savings": "50",
     "raises": "0"
   }
 }

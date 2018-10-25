@@ -25,7 +25,7 @@ class CalculatorClient:
 
     def __call__(self, webdriver: WrappedWebDriver, *args, **kwargs):
         self.calculator = Calculator(webdriver=webdriver)
-        webdriver.open(self.calculator.CALCULATOR_URL)
+        self.calculator.open_calculator()
         self.calculator.declare_number_of_debts(debts=self.loan_count)
         for count, user_loan in enumerate(self.user_loans):
             if user_loan.loan_type == loan_types.get(0):
@@ -53,11 +53,13 @@ class CalculatorClient:
 
 
 if __name__ == '__main__':
-    driver = WrappedWebDriver(browser='chrome')
-    with open('plan_configs/current-plan-config.json', 'r') as loan_json:
+    name = 'example-plan'
+    with open(f'plan_configs/{name}-config.json', 'r') as loan_json:
         loaded_json = json.load(loan_json)
 
-    name = f'latest-plan-{datetime.now().date()}'
-
-    client = CalculatorClient(plan_name=name, user_json=loaded_json)
+    client = CalculatorClient(
+        plan_name=f'{datetime.now().date()}-{name}',
+        user_json=loaded_json
+    )
+    driver = WrappedWebDriver(browser='chrome')
     client(webdriver=driver)
