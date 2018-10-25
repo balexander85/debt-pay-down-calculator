@@ -6,6 +6,9 @@ from selenium import webdriver
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.chrome.options import Options
 
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.wait import WebDriverWait
+
 
 chromedriver_path = "/Users/brian/bin/chromedriver"
 mobile_emulation = {"deviceName": "iPhone 6"}
@@ -76,29 +79,11 @@ class WrappedWebDriver:
     def switch_to_alert(self):
         return self.driver.switch_to.alert
 
-    # def get_element_attr_value(self, locator, attr):
-    #     element = self.get_element(locator=locator)
-    #     return element.get_attribute(attr)
-    #
-    # def hover(self, locator):
-    #     """
-    #         Move mouse over locator element
-    #     """
-    #     element = self.get_element(locator=locator)
-    #     ActionChains(self.driver).move_to_element(element).perform()
-
-    # def wait_for_element_attribute_has_value(self, element, attribute, value):
-    #     """
-    #         Wait for given element to have the given attribute and return bool
-    #     """
-    #     def element_has_attribute(ele, attrib, val):
-    #         """Assert element has attribute"""
-    #         return ele.get_attribute(attrib) == val
-    #
-    #     WebDriverWait(self.driver, timeout=120).until(
-    #         element_has_attribute(element, attribute, value),
-    #         "Element does not have value"
-    #     )
+    def wait_for_element_to_be_present(self, by, locator) -> bool:
+        """Wait for element to be present"""
+        return WebDriverWait(driver=self.driver, timeout=10).until(
+            EC.presence_of_element_located((by, locator))
+        )
 
 
 def click_visible_element(elements: List[WebElement]):

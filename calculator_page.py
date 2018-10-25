@@ -3,6 +3,8 @@ Page objects for the debt pay down calculator
 """
 from datetime import datetime
 
+from selenium.webdriver.common.by import By
+
 from util.wrapped_webdriver import WrappedWebDriver, click_visible_element
 from debt_pay_down_calculator import Loan, Windfall
 
@@ -110,11 +112,15 @@ class Calculator(BasePage):
         "//label[text()='Start date:']/../div[@class='vdp-datepicker']"
     )
     ADDITIONAL_INCOME_WINDFALL_DATE = (
-        "//label[text()='Date:']/../div[@class='vdp-datepicker']"
+        "(//label[text()='Date:']/../div[@class='vdp-datepicker'])[{index}]"
     )
     CALCULATE_BUTTON = "div.grid-cell.size-1of3.\+center-content button"
     START_OVER_BUTTON = "//button[contains(text(), 'Start over')]"
     RESULTS_DIV = "//h5[text()='Results']/.."
+
+    def open_calculator(self):
+        """Open driver to calculator page."""
+        self.driver.open(self.CALCULATOR_URL)
 
     def declare_number_of_debts(self, debts: str):
         """How many debts do you want to include in your plan?"""
@@ -234,7 +240,7 @@ class Calculator(BasePage):
         )
         self.driver.type(monthly_amount_input, windfall.amount)
         date_picker = self.driver.driver.find_element_by_xpath(
-            self.ADDITIONAL_INCOME_WINDFALL_DATE.format(index=index)
+            self.ADDITIONAL_INCOME_WINDFALL_DATE.format(index=index+1)
         )
         date_picker.click()
         DatePicker(webdriver=self.driver, date=windfall.date)
@@ -244,11 +250,11 @@ class Calculator(BasePage):
             self.CALCULATE_BUTTON
         )
         button.click()
+        self.driver.wait_for_element_to_be_present(By.XPATH, self.RESULTS_DIV)
 
     def generate_plan(self, page_name: str):
         """Save Results table to file."""
         self.press_calculate()
-        input("Verify input matches and press enter when done.")
         results = self.driver.driver.find_element_by_xpath(self.RESULTS_DIV)
         results_html = results.get_attribute('innerHTML')
         with open(f"plans/{page_name}.html", "w") as web_page:
