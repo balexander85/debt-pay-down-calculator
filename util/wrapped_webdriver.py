@@ -1,5 +1,4 @@
 
-from time import sleep
 from typing import List
 
 from selenium import webdriver
@@ -50,8 +49,8 @@ class WrappedWebDriver:
             possible, especially if input value has a space at the end.
         """
         element.clear()
-        element.send_keys(value)
-        sleep(2)
+        for character in value:
+            element.send_keys(character)
         element_value = element.get_attribute('value')
         try:
             assert element_value == value
@@ -66,7 +65,7 @@ class WrappedWebDriver:
     def element_visible(element):
         return element.is_displayed()
 
-    def get_current_url(self):
+    def get_current_url(self) -> str:
         return self.driver.current_url
 
     def get_window_handles(self):
