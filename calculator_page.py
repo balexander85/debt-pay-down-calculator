@@ -37,6 +37,8 @@ class BasePage:
 
 class DatePicker:
     """Date picker on the calculator page"""
+    YEAR_CELLS = "//span[text()='{}'][contains(@class, 'cell year')]"
+    YEAR_HEADER = "div.vdp-datepicker__calendar header span"
 
     def __init__(self, webdriver: WrappedWebDriver, date: str):
         self.driver = webdriver
@@ -44,10 +46,10 @@ class DatePicker:
         self.year = self.datetime.year
         self.month = self.datetime.strftime("%B")
         self.day = self.datetime.day
-        self.nav_up()
         self.select_date()
 
     def nav_up(self):
+        """Navigate to the highest level for DatePicker from days to decade."""
         month_year_button = self.driver.driver.find_elements_by_css_selector(
             "span.up"
         )
@@ -57,23 +59,51 @@ class DatePicker:
             )
         click_visible_element(year_button)
 
-    def select_date(self):
-        """
-            Assumed that the date picker calendar is visible
-            and on default view
-        """
+    def select_decade(self):
+        """Assumes the calendar is by decade"""
+        left_arrow, decade_span, right_arrow = [
+            e for e in self.driver.driver.find_elements_by_css_selector(
+                self.YEAR_HEADER) if e.is_displayed()
+        ]
+        decade_start, decade_end = [
+            int(x) for x in decade_span.text.split('-')
+        ]
+        if self.year < decade_start:
+            left_arrow.click()
+            self.select_decade()
+        elif self.year > decade_end:
+            right_arrow.click()
+            self.select_decade()
+
+    def select_year(self):
+        """Assumes the calendar is set to the decade for the selected year."""
         year = self.driver.driver.find_elements_by_xpath(
-            f"//span[text()='{self.year}'][contains(@class, 'cell year')]"
+            self.YEAR_CELLS.format(self.year)
         )
         click_visible_element(year)
+
+    def select_month(self):
+        """Assumes months are visible and then clicks the selected month"""
         month = self.driver.driver.find_elements_by_xpath(
             f"//span[text()='{self.month}']"
         )
         click_visible_element(month)
+
+    def select_day(self):
+        """Assumes days are visible and then clicks the selected day"""
         day = self.driver.driver.find_elements_by_xpath(
             f"//span[text()='{self.day}']"
         )
         click_visible_element(day)
+
+    def select_date(self):
+        """Assumed that the date picker calendar is visible and on default view
+        """
+        self.nav_up()
+        self.select_decade()
+        self.select_year()
+        self.select_month()
+        self.select_day()
 
 
 class Calculator(BasePage):
