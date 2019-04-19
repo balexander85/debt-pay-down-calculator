@@ -84,6 +84,12 @@ class WrappedWebDriver:
             EC.presence_of_element_located((by, locator))
         )
 
+    def wait_for_element_to_not_be_visible(self, by, locator) -> bool:
+        """Wait for element to not be visible"""
+        return WebDriverWait(driver=self.driver, timeout=10).until_not(
+            EC.visibility_of_element_located((by, locator))
+        )
+
 
 def click_visible_element(elements: List[WebElement]):
     """

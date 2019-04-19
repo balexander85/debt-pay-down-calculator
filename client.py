@@ -1,12 +1,20 @@
 """
     Use page object to use debt pay down calculator
 """
-from datetime import datetime
+import logging
 import json
+import sys
+from datetime import datetime
 
 from util.wrapped_webdriver import WrappedWebDriver
-from debt_pay_down_calculator import Loans, Windfall
-from calculator_page import Calculator, loan_types
+from calculator_page import Calculator, loan_types, Windfall, Loans
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s: %(message)s",
+    stream=sys.stdout,
+)
+LOGGER = logging.getLogger(__name__)
 
 
 class CalculatorClient:
@@ -22,12 +30,15 @@ class CalculatorClient:
         self.windfalls = [
             Windfall(**wf) for wf in user_json.get('windfalls')
         ]
+        LOGGER.info("Instantiated CalculatorClient")
 
     def __call__(self, webdriver: WrappedWebDriver, *args, **kwargs):
         self.calculator = Calculator(webdriver=webdriver)
         self.calculator.open_calculator()
         self.calculator.declare_number_of_debts(debts=self.loan_count)
         for count, user_loan in enumerate(self.user_loans):
+            LOGGER.info(f"Loan: {user_loan}")
+            self.calculator.close_promo()
             if user_loan.loan_type == loan_types.get(0):
                 self.calculator.add_credit_card(index=count, card=user_loan)
             elif user_loan.loan_type == loan_types.get(4):
@@ -48,13 +59,15 @@ class CalculatorClient:
             self.calculator.declare_additional_income(number='0')
         self.calculator.declare_extra_payments(number=self.budget_cuts)
         self.calculator.select_tax_bracket(bracket=self.tax_bracket)
-        self.calculator.generate_plan(page_name=self.plan_name)
+        self.calculator.generate_plan(page_name=f"{self.plan_name}-{self.budget_cuts}-savings")
         self.calculator.driver.quit_driver()
 
 
 if __name__ == '__main__':
     name = 'example-plan'
-    with open(f'plan_configs/{name}-config.json', 'r') as loan_json:
+    config_file_name = f'plan_configs/{name}-config.json'
+    LOGGER.info(f"Opening {config_file_name}....")
+    with open(config_file_name, 'r') as loan_json:
         loaded_json = json.load(loan_json)
 
     client = CalculatorClient(

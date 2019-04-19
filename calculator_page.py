@@ -1,12 +1,23 @@
 """
 Page objects for the debt pay down calculator
 """
+import logging
 from datetime import datetime
+from sys import stdout
+from typing import List
 
 from selenium.webdriver.common.by import By
+from selenium.common.exceptions import NoSuchElementException
 
 from util.wrapped_webdriver import WrappedWebDriver, click_visible_element
-from debt_pay_down_calculator import Loan, Windfall
+
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s: %(message)s",
+    stream=stdout,
+)
+LOGGER = logging.getLogger(__name__)
 
 
 tax_brackets = {
@@ -26,6 +37,81 @@ loan_types = {
     3: "Mortgage",
     4: "Other kind of loan"
 }
+
+
+class Promotion:
+    """
+        Credit Card Promotion Details
+    """
+
+    def __init__(
+            self,
+            regular_rate,
+            promo_rate,
+            end_date: str,
+            minimum_monthly_payment,
+            promo_type: str
+    ):
+        self.regular_rate = regular_rate
+        self.promo_rate = promo_rate
+        self.end_date = end_date
+        self.minimum_monthly_payment = minimum_monthly_payment
+        self.promo_type = promo_type
+
+
+class Loan:
+    """
+        Loan or Credit Card
+    """
+
+    def __init__(
+            self,
+            lender_name: str,
+            interest_rate,
+            balance,
+            min_monthly_payment,
+            loan_type,
+            promo: dict = None,
+            deductible: str = "1"
+    ):
+        self.lender_name = lender_name
+        self.interest_rate = interest_rate
+        self.balance = balance
+        self.min_monthly_payment = min_monthly_payment
+        self.loan_type = loan_type
+        self.promo = promo
+        self.deductible = deductible
+
+    def __repr__(self):
+        return f"<Loan: {self.lender_name} - {self.balance} - {self.loan_type}>"
+
+    @property
+    def promo_details(self) -> Promotion:
+        if self.promo:
+            return Promotion(**self.promo)
+
+
+class Loans:
+
+    def __init__(self, loans: List[Loan]):
+        self.loans = loans
+
+    def __len__(self):
+        return len(self.loans)
+
+    def __iter__(self) -> Loan:
+        for loan in self.loans:
+            yield Loan(**loan)
+
+
+class Windfall:
+    """
+        Cash 'windfalls': Any one-time events that will
+        increase the cash you have in a given month
+    """
+    def __init__(self, amount: str, date: str):
+        self.amount = amount
+        self.date = date
 
 
 class BasePage:
@@ -244,6 +330,7 @@ class Calculator(BasePage):
             tax_deductible_option = self.driver.driver.find_element_by_xpath(
                 self.OTHER_LOAN_TAX_DEDUCTIBLE_RADIO_OPTION.format(index=index)
             )
+            self.close_promo()
             tax_deductible_option.click()
 
     def add_credit_card_with_promo_rate(self, index: int, card: Loan):
@@ -288,4 +375,23 @@ class Calculator(BasePage):
         results = self.driver.driver.find_element_by_xpath(self.RESULTS_DIV)
         results_html = results.get_attribute('innerHTML')
         with open(f"plans/{page_name}.html", "w") as web_page:
+            LOGGER.info(f"Saving {page_name}.html")
             web_page.write(str(results_html))
+
+    def close_promo(self):
+        try:
+            promo_button = self.driver.driver.find_element_by_css_selector(
+                "button[title='Close']"
+            )
+            if promo_button:
+                LOGGER.info("Promo found.")
+                if promo_button.is_displayed():
+                    LOGGER.info("Promo displayed.")
+                    promo_button.click()
+                    LOGGER.info("Promo clicked.")
+                    self.driver.wait_for_element_to_not_be_visible(
+                        By.CSS_SELECTOR, "button[title='Close']"
+                    )
+                    LOGGER.info("Promo supposedly not visible.")
+        except NoSuchElementException:
+            LOGGER.info("No promo button found.")

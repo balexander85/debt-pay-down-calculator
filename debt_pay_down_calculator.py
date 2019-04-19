@@ -18,8 +18,8 @@ from bs4 import BeautifulSoup
 
 
 logging.basicConfig(
-    level=logging.ERROR,
-    format="%(levelname)7s: %(message)s",
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)7s: %(message)s",
     stream=sys.stdout,
 )
 
