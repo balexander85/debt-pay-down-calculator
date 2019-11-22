@@ -10,9 +10,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 
 
 chromedriver_path = "/Users/brian/bin/chromedriver"
-mobile_emulation = {"deviceName": "iPhone 6"}
-chrome_options = Options()
-chrome_options.add_experimental_option("mobileEmulation", mobile_emulation)
+chrome_options = webdriver.ChromeOptions()
 
 
 class WrappedWebDriver:
@@ -21,11 +19,18 @@ class WrappedWebDriver:
         if browser == "chrome":
             self.driver = webdriver.Chrome(executable_path=chromedriver_path)
         elif browser == "mobile":
+            mobile_emulation = {"deviceName": "iPhone 6"}
+            chrome_options.add_experimental_option("mobileEmulation", mobile_emulation)
             self.driver = webdriver.Chrome(
                 executable_path=chromedriver_path,
                 chrome_options=chrome_options
             )
-
+        elif browser == "headless":
+            chrome_options.add_argument("--headless")
+            self.driver = webdriver.Chrome(
+                executable_path=chromedriver_path,
+                chrome_options=chrome_options
+            )
     def open(self, url):
         self.driver.get(url)
 

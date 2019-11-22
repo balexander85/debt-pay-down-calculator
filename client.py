@@ -74,5 +74,5 @@ if __name__ == '__main__':
         plan_name=f'{datetime.now().date()}-{name}',
         user_json=loaded_json
     )
-    driver = WrappedWebDriver(browser='chrome')
+    driver = WrappedWebDriver(browser='headless')
     client(webdriver=driver)
