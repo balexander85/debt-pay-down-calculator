@@ -30,13 +30,13 @@ loan_types = {
     "Car, truck, motorcycle, or boat loan": 1,
     "Home equity loan": 2,
     "Mortgage": 3,
-    "Other kind of loan": 4
+    "Other kind of loan": 4,
 }
 
 promo_types = {
     "A low introductory interest rate that will increase at a later date": 0,
     "No payments are due until a later date": 1,
-    "No special promotion on this card": 2
+    "No special promotion on this card": 2,
 }
 
 tax_brackets = {
@@ -45,7 +45,7 @@ tax_brackets = {
     "25% ($31,851-$77,100 single; $63,701-$128,500 married)": "25",
     "28% ($77,101-$160,850 single; $128,501-$195,850 married)": "28",
     "33% ($169,851-$349,700 single; $195,851-$349,700 married)": "33",
-    "35% ($349,701 or more)": "35"
+    "35% ($349,701 or more)": "35",
 }
 
 
@@ -54,6 +54,7 @@ class Windfall:
         Cash 'windfalls': Any one-time events that will
         increase the cash you have in a given month
     """
+
     def __init__(self, amount: str, date: str):
         self.amount = amount
         self.date = date
@@ -65,12 +66,12 @@ class Promotion:
     """
 
     def __init__(
-            self,
-            regular_rate,
-            promo_rate,
-            end_date: str,
-            minimum_monthly_payment,
-            promo_type: str
+        self,
+        regular_rate,
+        promo_rate,
+        end_date: str,
+        minimum_monthly_payment,
+        promo_type: str,
     ):
         self.regular_rate = regular_rate
         self.promo_rate = promo_rate
@@ -85,14 +86,14 @@ class Loan:
     """
 
     def __init__(
-            self,
-            lender_name: str,
-            interest_rate,
-            balance,
-            min_monthly_payment,
-            loan_type,
-            promo: dict = None,
-            deductible: str = "1"
+        self,
+        lender_name: str,
+        interest_rate,
+        balance,
+        min_monthly_payment,
+        loan_type,
+        promo: dict = None,
+        deductible: str = "1",
     ):
         self.lender_name = lender_name
         self.interest_rate = interest_rate
@@ -109,7 +110,6 @@ class Loan:
 
 
 class Loans:
-
     def __init__(self, loans: List[Loan]):
         self.loans = loans
 
@@ -126,27 +126,29 @@ class DebtCalculatorClient:
         Client used to interact with the debt-pay-down-calculator.aspx
     """
 
-    url = "https://www.bankrate.com/calculators/managing-debt" \
-          "/debt-pay-down-calculator.aspx"
+    url = (
+        "https://www.bankrate.com/calculators/managing-debt"
+        "/debt-pay-down-calculator.aspx"
+    )
 
     def __init__(
-            self,
-            plan_name: str,
-            number_of_debts: int,
-            user_info: dict,
-            windfalls: List[Windfall]
+        self,
+        plan_name: str,
+        number_of_debts: int,
+        user_info: dict,
+        windfalls: List[Windfall],
     ):
         self.session = requests.Session()
         self.headers = {
             "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,"
-                      "image/webp,image/apng,*/*;q=0.8",
+            "image/webp,image/apng,*/*;q=0.8",
             "accept-encoding": "gzip, deflate, br",
             "accept-language": "en-US,en;q=0.9",
             "path": "/calculators/managing-debt/debt-pay-down-calculator.aspx",
             "upgrade-insecure-requests": "1",
             "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) "
-                          "AppleWebKit/537.36 (KHTML, like Gecko) "
-                          "Chrome/64.0.3282.140 Safari/537.36"
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/64.0.3282.140 Safari/537.36",
         }
         self.plan_name = plan_name
         self.loan_count = number_of_debts
@@ -188,9 +190,7 @@ class DebtCalculatorClient:
             Just a wrapper for posting requests
         """
         params.update({"__VIEWSTATE": self.view_state})
-        post_response = self.session.post(
-            self.url, data=params, headers=self.headers
-        )
+        post_response = self.session.post(self.url, data=params, headers=self.headers)
         self.view_state = get_view_state(post_response)
         # save_page(post_response, "submit-request")
         return post_response
@@ -205,7 +205,7 @@ class DebtCalculatorClient:
         )
         params = {
             "ctl00$well$defaultUC$isValid": "DEFAULT",
-            "ctl00$well$defaultUC$debts": self.loan_count
+            "ctl00$well$defaultUC$debts": self.loan_count,
         }
         self.submit_request(params=params)
 
@@ -222,7 +222,7 @@ class DebtCalculatorClient:
         params = {
             "ctl00$well$defaultUC$isValid": "LT",
             "ctl00$well$defaultUC$lenderNameLT": loan.lender_name,
-            "ctl00$well$defaultUC$AnswerLT": loan_types.get(loan.loan_type)
+            "ctl00$well$defaultUC$AnswerLT": loan_types.get(loan.loan_type),
         }
         self.submit_request(params=params)
 
@@ -243,10 +243,9 @@ class DebtCalculatorClient:
         """
         params = {
             "ctl00$well$defaultUC$isValid": "OL",
-            "ctl00$well$defaultUC$currMonthlyPaymentOL":
-                loan.min_monthly_payment,
+            "ctl00$well$defaultUC$currMonthlyPaymentOL": loan.min_monthly_payment,
             "ctl00$well$defaultUC$interestRateOL": loan.interest_rate,
-            "ctl00$well$defaultUC$selectedOL": loan.deductible
+            "ctl00$well$defaultUC$selectedOL": loan.deductible,
         }
         self.submit_request(params=params)
 
@@ -258,7 +257,7 @@ class DebtCalculatorClient:
         params = {
             "ctl00$well$defaultUC$isValid": "",
             "ctl00$well$defaultUC$selectedICONIF": change,
-            "ctl00$well$defaultUC$SubmitICONIF": "Submit"
+            "ctl00$well$defaultUC$SubmitICONIF": "Submit",
         }
         self.submit_request(params=params)
 
@@ -270,7 +269,6 @@ class DebtCalculatorClient:
             "ctl00$well$defaultUC$isValid": "",
             "ctl00$well$defaultUC$AnswerPT": promo_types.get(promo_type),
             "ctl00$well$defaultUC$SubmitPT": "Submit",
-
         }
         self.submit_request(params=params)
 
@@ -281,11 +279,9 @@ class DebtCalculatorClient:
         params = {
             "ctl00$well$defaultUC$isValid": "LIIR",
             "ctl00$well$defaultUC$introInterestLIIR": promo.promo_rate,
-            "ctl00$well$defaultUC$currMinPaymentLIIR":
-                promo.minimum_monthly_payment,
+            "ctl00$well$defaultUC$currMinPaymentLIIR": promo.minimum_monthly_payment,
             "ctl00$well$defaultUC$introEndsLIIR": promo.end_date,
             "ctl00$well$defaultUC$normalInterestLIIR": promo.regular_rate,
-
         }
         self.submit_request(params=params)
 
@@ -296,9 +292,7 @@ class DebtCalculatorClient:
         params = {
             "ctl00$well$defaultUC$isValid": "NSP",
             "ctl00$well$defaultUC$interestRateNSP": loan.interest_rate,
-            "ctl00$well$defaultUC$minMonthlyPaymentNSP":
-                loan.min_monthly_payment,
-
+            "ctl00$well$defaultUC$minMonthlyPaymentNSP": loan.min_monthly_payment,
         }
         self.submit_request(params=params)
 
@@ -313,8 +307,7 @@ class DebtCalculatorClient:
         """
         params = {
             "ctl00$well$defaultUC$isValid": "",
-            "ctl00$well$defaultUC$SubmitGIAL": "Continue"
-
+            "ctl00$well$defaultUC$SubmitGIAL": "Continue",
         }
         self.submit_request(params=params)
 
@@ -325,8 +318,7 @@ class DebtCalculatorClient:
         """
         params = {
             "ctl00$well$defaultUC$isValid": "AMC",
-            "ctl00$well$defaultUC$additionPayAMC": self.budget_cuts
-
+            "ctl00$well$defaultUC$additionPayAMC": self.budget_cuts,
         }
         self.submit_request(params=params)
 
@@ -337,7 +329,7 @@ class DebtCalculatorClient:
         """
         params = {
             "ctl00$well$defaultUC$isValid": "NOR",
-            "ctl00$well$defaultUC$numberOfRaisesNOR": self.future_raises
+            "ctl00$well$defaultUC$numberOfRaisesNOR": self.future_raises,
         }
         self.submit_request(params=params)
 
@@ -363,11 +355,8 @@ class DebtCalculatorClient:
         """
         params = {
             "ctl00$well$defaultUC$isValid": "",
-            "ctl00$well$defaultUC$AnswerSTB": tax_brackets.get(
-                self.tax_bracket
-            ),
-            "ctl00$well$defaultUC$SubmitSTB": "Submit"
-
+            "ctl00$well$defaultUC$AnswerSTB": tax_brackets.get(self.tax_bracket),
+            "ctl00$well$defaultUC$SubmitSTB": "Submit",
         }
         self.submit_request(params=params)
 
@@ -388,24 +377,18 @@ class DebtCalculatorClient:
             self.select_promo_type(promo_type=loan.promo_details.promo_type)
             self.post_promo_details(promo=loan.promo_details)
         else:
-            self.select_promo_type(
-                promo_type="No special promotion on this card"
-            )
+            self.select_promo_type(promo_type="No special promotion on this card")
             self.add_interest_rate_and_payments(loan=loan)
 
     def add_windfalls(self):
         """If windfalls add them"""
         params = {
             "ctl00$well$defaultUC$isValid": "",
-            "ctl00$well$defaultUC$SubmitWI": "Submit"
+            "ctl00$well$defaultUC$SubmitWI": "Submit",
         }
         for count, windfall in enumerate(self.windfalls, start=1):
-            params.update(
-                {f"ctl00$well$defaultUC$SalAmountWI{count}": windfall.amount}
-            )
-            params.update(
-                {f"ctl00$well$defaultUC$SalDateWI{count}": windfall.date}
-            )
+            params.update({f"ctl00$well$defaultUC$SalAmountWI{count}": windfall.amount})
+            params.update({f"ctl00$well$defaultUC$SalDateWI{count}": windfall.date})
         self.submit_request(params=params)
 
     def add_raises(self):
@@ -419,7 +402,6 @@ class DebtCalculatorClient:
         params = {
             "ctl00$well$defaultUC$isValid": "",
             "ctl00$well$defaultUC$SubmitNOMTP": "Get Plan",
-
         }
         response = self.submit_request(params=params)
         save_page(page_response=response, page_name=self.plan_name)
@@ -442,16 +424,14 @@ if __name__ == "__main__":
         with open(f"plan_configs/{plan}", "r") as loan_json:
             loaded_json = json.load(loan_json)
             user_loans = Loans(loaded_json.get("loans"))
-            user_windfalls = [
-                Windfall(**wf) for wf in loaded_json.get("windfalls")
-            ]
+            user_windfalls = [Windfall(**wf) for wf in loaded_json.get("windfalls")]
             user = loaded_json.get("user")
 
         with DebtCalculatorClient(
-                plan_name=plan.replace(".json", ""),
-                number_of_debts=len(user_loans),
-                user_info=user,
-                windfalls=user_windfalls
+            plan_name=plan.replace(".json", ""),
+            number_of_debts=len(user_loans),
+            user_info=user,
+            windfalls=user_windfalls,
         ) as debt_calculator:
             for user_loan in user_loans:
                 debt_calculator.add_loan(loan=user_loan)
